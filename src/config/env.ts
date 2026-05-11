@@ -48,12 +48,12 @@ const EnvSchema = z.object({
 
   // Supplier scraping
   /**
-   * Proxy for Playwright-based supplier scraping.
-   * Webshare: WEBSHARE_PROXY_SERVER + WEBSHARE_PROXY_USERNAME + WEBSHARE_PROXY_PASSWORD
+   * Proxy for Playwright-based supplier scraping (Alibaba/1688 — currently unused).
+   * Optional: only needed if re-enabling Playwright scrapers.
    */
-  WEBSHARE_PROXY_SERVER: z.string().min(1),
-  WEBSHARE_PROXY_USERNAME: z.string().min(1),
-  WEBSHARE_PROXY_PASSWORD: z.string().min(1),
+  WEBSHARE_PROXY_SERVER: EmptyToUndefined.pipe(z.string().min(1).optional()),
+  WEBSHARE_PROXY_USERNAME: EmptyToUndefined.pipe(z.string().min(1).optional()),
+  WEBSHARE_PROXY_PASSWORD: EmptyToUndefined.pipe(z.string().min(1).optional()),
 
   // AliExpress
   ALIEXPRESS_APP_KEY: z.string().min(1),
@@ -174,24 +174,13 @@ export const env = (() => {
     process.exit(1);
   }
 
-  const hasWebshareProxy =
-    Boolean(parsed.data.WEBSHARE_PROXY_SERVER) &&
-    Boolean(parsed.data.WEBSHARE_PROXY_USERNAME) &&
-    Boolean(parsed.data.WEBSHARE_PROXY_PASSWORD);
-  if (!hasWebshareProxy) {
-    console.error('Invalid environment variables:', {
-      proxy: [
-        'Provide Webshare proxy (WEBSHARE_PROXY_SERVER/WEBSHARE_PROXY_USERNAME/WEBSHARE_PROXY_PASSWORD)'
-      ]
-    });
-    process.exit(1);
-  }
-
-  const webshareProxyServer = normalizeWebshareProxyServer(parsed.data.WEBSHARE_PROXY_SERVER);
+  const webshareProxyServer = parsed.data.WEBSHARE_PROXY_SERVER
+    ? normalizeWebshareProxyServer(parsed.data.WEBSHARE_PROXY_SERVER)
+    : undefined;
 
   return {
     ...parsed.data,
-    WEBSHARE_PROXY_SERVER: webshareProxyServer,
+    WEBSHARE_PROXY_SERVER: webshareProxyServer ?? '',
     TIKTOK_HASHTAGS:
       parsed.data.TIKTOK_HASHTAGS ??
       'TikTokMadeMeBuyIt,viral,trending,AmazonFinds',

@@ -28,6 +28,30 @@ services:
       timeout: 3s
       retries: 30
 
+  backup:
+    image: postgres:15-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-dropship}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-dropship}
+      PGDATABASE: ${POSTGRES_DB:-dropship}
+    volumes:
+      - ./backups:/backups
+    # Runs once per day at 03:00 UTC, keeps 7 days of dumps.
+    entrypoint: >
+      sh -c "
+        while true; do
+          FILE=/backups/dropship_$$(date +%Y%m%d_%H%M%S).sql.gz;
+          pg_dump | gzip > \"$$FILE\" && echo \"Backup OK: $$FILE\";
+          find /backups -name '*.sql.gz' -mtime +7 -delete;
+          sleep 86400;
+        done
+      "
+    restart: unless-stopped
+
   app:
     build: .
     depends_on:

@@ -257,7 +257,7 @@ Output a JSON object with EXACTLY these fields:
 Output JSON only. No other text.`;
 
   const resp = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: [
       { role: 'system', content: system },
       { role: 'user', content: user }

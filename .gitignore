@@ -23,3 +23,7 @@ src/generated/
 # Bundled binaries that don't belong in the repo
 ngrok.exe
 *.exe
+
+# Database backups (local only — never commit dumps)
+backups/
+!backups/.gitkeep
