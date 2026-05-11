@@ -1,4 +1,3 @@
-import { PorterStemmer } from 'natural';
 import type { TikTokRawProduct } from '../../shared/types';
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -195,49 +194,49 @@ export function normalizeTikTokKeyword(caption: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Stems of common English words that are never product keywords.
-  // Pre-stemmed with PorterStemmer so the comparison is fast.
+  // Common English words that are not product keywords (original lowercase forms, no stemming).
   const stop = new Set([
     // articles / conjunctions / prepositions
-    'the','and','for','with','from','that','thi','tho','these','those',
-    'into','onto','upon','about','above','after','befor','below','between',
+    'the','and','for','with','from','that','this','those','these','then',
+    'into','onto','upon','about','above','after','before','below','between',
     // pronouns
-    'you','your','our','their','them','thi','that','which','what','who',
-    // auxiliaries / common verbs (stems)
-    'is','are','was','were','be','been','have','has','had','do','doe','did',
+    'you','your','our','their','them','which','what','who','its','mine',
+    // auxiliaries / common verbs
+    'is','are','was','were','be','been','have','has','had','do','does','did',
     'will','would','could','should','may','might','must','shall','can',
     'get','got','go','gone','come','went','came','give','gave','given',
     'make','made','take','took','taken','put','set','let','keep','kept',
     'see','saw','seen','know','knew','known','think','thought','feel','felt',
-    'want','want','need','use','tri','look','show','tell','told','call',
-    'work','play','run','ran','move','live','leav','turn','start','stop',
+    'want','need','use','try','look','show','tell','told','call',
+    'work','play','run','ran','move','live','leave','turn','start','stop',
     'buy','sell','pay','hold','help','watch','wait','hear','read','write',
     'eat','cook','drink','sleep','sit','stand','walk','talk','speak','ask',
-    'seem','appear','happen','allow','believ','repli','mayb','actual',
-    // common adjectives that are never product keywords (stems)
+    'seem','appear','happen','allow','believe','reply','maybe','actually',
+    // adjectives that are never product keywords
     'good','bad','best','better','worst','great','nice','new','old','big',
-    'littl','small','larg','high','low','long','short',
-    'free','real','true','fals','hard','easi','fast','slow','quick',
-    'cold','clean','funn','cuti','pretti','amaz','awesom','epic',
-    'viral','trend','popular','famous','secret','special','uniqu',
-    // time / people / place (stems)
-    'time','day','dai','week','month','year','hour','minut','second',
-    'today','tomorrow','yesterday','now','soon','alreadi','alway','never',
-    'life','world','home','hous','place','thing','way','part','fact',
-    'man','woman','girl','boy','kid','peopl','person','friend','famili',
-    'movi','song','music','video','photo','pictur','stori','news',
+    'little','small','large','high','low','long','short','just','only',
+    'free','real','true','false','hard','easy','fast','slow','quick',
+    'cold','clean','funny','cute','pretty','amazing','awesome','epic',
+    'viral','trending','popular','famous','secret','special','unique',
+    // time / people / place
+    'time','day','days','week','month','year','hour','minute','second',
+    'today','tomorrow','yesterday','now','soon','already','always','never',
+    'life','world','home','house','place','thing','way','part','fact',
+    'man','woman','girl','boy','kid','people','person','friend','family',
+    'movie','song','music','video','photo','picture','story','news',
     // TikTok-specific filler
-    'lol','omg','pov','fyp','fypシ','xyzbca','blowthisup','follow','like',
-    'love','hate','miss','hope','wish','dream','joke','fun','wow'
+    'lol','omg','pov','fyp','xyzbca','blowthisup','follow','like',
+    'love','hate','miss','hope','wish','dream','joke','fun','wow',
+    'can','one','two','not','but','all','got','out','her','him',
+    'they','also','very','here','there','when','where','more','most'
   ]);
 
   const baseTokens = cleaned.split(/\s+/);
 
   const seen = new Set<string>();
   const tokens = baseTokens
-    .map((t) => t.trim())
+    .map((t) => t.trim().toLowerCase())
     .filter((t) => t.length >= 3)
-    .map((t) => PorterStemmer.stem(t))
     .filter((t) => !stop.has(t));
   const deduped: string[] = [];
   for (const t of tokens) {

@@ -164,6 +164,7 @@ export async function generateContent(productId: string): Promise<string | null>
     id: string;
     platform: string;
     supplier_url: string;
+    product_title: string | null;
     price_usd: number;
     shipping_days: number | null;
     rating: number | null;
@@ -234,9 +235,12 @@ export async function generateContent(productId: string): Promise<string | null>
   const system =
     'You are an expert Shopify product copywriter specializing in dropshipping products. You write compelling, SEO-optimized product listings that convert browsers into buyers. You always output valid JSON only — no markdown, no explanation, no extra text. Never mention the supplier, AliExpress, Alibaba, or China. Never make false claims. Write in American English.';
 
+  // Use the actual sourced product title so GPT describes the real item (not the garbled TikTok keyword).
+  const productName = supplier.product_title?.trim() || product.keyword;
+
   const user = `Create a complete Shopify product listing for this product.
 
-Product keyword: ${product.keyword}
+Product name: ${productName}
 Supplier sourcing price (cost proxy): $${supplier.price_usd}
 ${amazonRef != null ? `Amazon reference price when scraped: $${amazonRef.toFixed(2)} — do NOT mention Amazon in copy or claim parity.\n` : ''}
 Shipping time: ${supplier.shipping_days ?? 'unknown'} days
