@@ -1,0 +1,10 @@
+# Optional overlay for deployments: restart policy (+ resource hints).
+# Compose merges lists (e.g. volumes) rather than replacing them — to run a baked
+# image without ./src mounts, duplicate this file without the dev `volumes:` block or
+# deploy the built image directly (Railway, Fly, ECS, etc.).
+#
+# Example: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  app:
+    restart: unless-stopped

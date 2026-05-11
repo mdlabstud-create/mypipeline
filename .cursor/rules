@@ -1,0 +1,14 @@
+# ============================================================
+#  AUTOMATED DROPSHIPPING PIPELINE
+#  Cursor Project Rules — Master Instruction File
+#  Version 1.0 | April 2026
+# ============================================================
+#
+# Source of truth: c:\Users\hassa\Documents\dropship-pipeline.cursor-rules
+#
+# IMPORTANT:
+# - Read top-to-bottom before coding.
+# - Do not move to next phase until tests pass and PHASES.md updated.
+#
+# (This file is intentionally duplicated into the repo so Cursor rules apply
+# to the workspace directory that contains the code.)
