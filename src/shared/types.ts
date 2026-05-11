@@ -82,7 +82,8 @@ export type ProductListingStatus =
   | 'rejected'
   | 'published'
   | 'duplicate'
-  | 'error';
+  | 'error'
+  | 'superseded';
 
 /**
  * DB model: product_listings.

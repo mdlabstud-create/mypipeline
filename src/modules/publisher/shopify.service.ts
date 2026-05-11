@@ -3,8 +3,9 @@ import { env } from '../../config/env';
 import { query } from '../../config/db';
 import logger, { logPipelineEvent } from '../../shared/logger';
 import { PublisherError } from '../../shared/errors';
-import { checkDuplicate } from './duplicate.check';
+import { checkDuplicate, findPublishedDuplicateBySupplierTitle } from './duplicate.check';
 import { getFullListingById } from './publisher.types';
+import type { ProductListing } from '../../shared/types';
 import { getShopifyAccessToken } from './shopify.token';
 import { applyDefaultVariantPricing } from './shopify.variant';
 
@@ -49,6 +50,97 @@ function parseProductCreateData(data: unknown): ShopifyProductCreateData | null 
 }
 
 /**
+ * Replaces an existing Shopify product's content + price with a better-margin version.
+ * Marks the old listing 'superseded' and the new listing 'published' using the same shopify_id.
+ */
+async function updateExistingShopifyListing(params: {
+  graphqlUrl: string;
+  headers: Record<string, string>;
+  existingListingId: string;
+  shopifyId: string;
+  shopifyHandle: string;
+  newListing: ProductListing;
+  newListingId: string;
+  existingMarginPct: number;
+}): Promise<void> {
+  const { graphqlUrl, headers, existingListingId, shopifyId, shopifyHandle, newListing, newListingId, existingMarginPct } = params;
+
+  const descriptionHtml = newListing.description
+    .split('\n')
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0)
+    .map((p) => `<p>${p}</p>`)
+    .join('');
+
+  const updateMutation = `
+    mutation productUpdate($input: ProductInput!) {
+      productUpdate(input: $input) {
+        product { id handle }
+        userErrors { field message }
+      }
+    }
+  `;
+
+  let updateRes: ShopifyGraphqlResponse<unknown>;
+  try {
+    const res = await axios.post(
+      graphqlUrl,
+      {
+        query: updateMutation,
+        variables: {
+          input: {
+            id: shopifyId,
+            title: newListing.title,
+            descriptionHtml,
+            tags: newListing.tags,
+            seo: {
+              title: newListing.seoTitle ?? undefined,
+              description: newListing.seoDescription ?? undefined
+            }
+          }
+        }
+      },
+      { headers }
+    );
+    updateRes = res.data as ShopifyGraphqlResponse<unknown>;
+  } catch (error: unknown) {
+    throw new PublisherError('Shopify productUpdate request failed', newListingId, summarizeAxiosLikeError(error));
+  }
+
+  if (updateRes.errors?.length) {
+    throw new PublisherError('Shopify productUpdate returned errors', newListingId, updateRes.errors);
+  }
+
+  await applyDefaultVariantPricing({
+    graphqlUrl,
+    headers,
+    shopifyProductGid: shopifyId,
+    retailUsd: newListing.retailUsd,
+    setCompareAt: true
+  });
+
+  // Release the unique index slot on the old listing before claiming it for the new one.
+  await query(`UPDATE product_listings SET status = 'superseded', updated_at = now() WHERE id = $1`, [existingListingId]);
+  await query(
+    `UPDATE product_listings SET shopify_id = $2, shopify_handle = $3, status = 'published', published_at = now() WHERE id = $1`,
+    [newListingId, shopifyId, shopifyHandle]
+  );
+
+  await logPipelineEvent({
+    stage: 'publisher',
+    status: 'ok',
+    message: 'updated shopify listing with better-margin version',
+    payload: {
+      newListingId,
+      existingListingId,
+      shopifyId,
+      oldMarginPct: existingMarginPct,
+      newMarginPct: newListing.marginPct
+    }
+  });
+}
+
+/**
  * Publishes an approved listing to Shopify (ACTIVE by default, optional DRAFT).
  *
  * Enforces approval gate (#1).
@@ -76,6 +168,39 @@ export async function publishToShopify(
 
   if (listing.status !== 'approved') {
     throw new PublisherError('Product not approved', listingId);
+  }
+
+  const url = `https://${env.SHOPIFY_STORE_URL}/admin/api/2025-01/graphql.json`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Shopify-Access-Token': accessToken
+  };
+
+  // Check if the same AliExpress product is already published. If so, only proceed
+  // when this listing has a strictly better margin — in that case update in place.
+  const sameProduct = await findPublishedDuplicateBySupplierTitle(listingId, listing.supplierId);
+  if (sameProduct) {
+    if (listing.marginPct > sameProduct.marginPct) {
+      await updateExistingShopifyListing({
+        graphqlUrl: url,
+        headers,
+        existingListingId: sameProduct.listingId,
+        shopifyId: sameProduct.shopifyId,
+        shopifyHandle: sameProduct.shopifyHandle,
+        newListing: listing,
+        newListingId: listingId,
+        existingMarginPct: sameProduct.marginPct
+      });
+    } else {
+      await query('UPDATE product_listings SET status = $2 WHERE id = $1', [listingId, 'duplicate']);
+      await logPipelineEvent({
+        stage: 'publisher',
+        status: 'ok',
+        message: 'skipped: same product already published with equal or better margin',
+        payload: { listingId, existingListingId: sameProduct.listingId, existingMarginPct: sameProduct.marginPct, newMarginPct: listing.marginPct }
+      });
+    }
+    return;
   }
 
   const isDup = await checkDuplicate(
@@ -121,12 +246,6 @@ export async function publishToShopify(
         description: listing.seoDescription ?? undefined
       }
     }
-  };
-
-  const url = `https://${env.SHOPIFY_STORE_URL}/admin/api/2025-01/graphql.json`;
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Shopify-Access-Token': accessToken
   };
 
   const doRequest = async (): Promise<ShopifyGraphqlResponse<unknown>> => {
