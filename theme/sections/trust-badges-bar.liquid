@@ -1,0 +1,115 @@
+{% comment %}
+  Trust Badges Bar — place directly below the Add to Cart button on product pages.
+  Shopify Theme Editor: Add Section → trust-badges-bar
+{% endcomment %}
+
+<div class="trust-badges-bar" style="background-color: {{ section.settings.background_color }};">
+  {% if section.settings.heading != blank %}
+    <p class="trust-badges-bar__heading">{{ section.settings.heading }}</p>
+  {% endif %}
+  <ul class="trust-badges-bar__list">
+    {% for block in section.blocks %}
+      {% if block.settings.label != blank %}
+        <li class="trust-badges-bar__item" {{ block.shopify_attributes }}>
+          <span class="trust-badges-bar__icon" aria-hidden="true">{{ block.settings.icon }}</span>
+          <span class="trust-badges-bar__label">{{ block.settings.label }}</span>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</div>
+
+<style>
+  .trust-badges-bar {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    margin: 12px 0;
+  }
+  .trust-badges-bar__heading {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    margin: 0 0 8px;
+    text-align: center;
+  }
+  .trust-badges-bar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+  .trust-badges-bar__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--color-foreground, #111);
+    white-space: nowrap;
+  }
+  .trust-badges-bar__icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  @media (max-width: 480px) {
+    .trust-badges-bar__list { gap: 6px 14px; }
+    .trust-badges-bar__item { font-size: 0.75rem; }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Trust Badges Bar",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Why shop with us"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background colour",
+      "default": "#f9fafb"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "badge",
+      "name": "Badge",
+      "settings": [
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon (emoji or single character)",
+          "default": "🔒"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label text",
+          "default": "Secure Checkout"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Trust Badges Bar",
+      "blocks": [
+        { "type": "badge", "settings": { "icon": "🔒", "label": "Secure Checkout" } },
+        { "type": "badge", "settings": { "icon": "🚀", "label": "Fast Shipping" } },
+        { "type": "badge", "settings": { "icon": "↩️", "label": "Easy Returns" } },
+        { "type": "badge", "settings": { "icon": "⭐", "label": "Verified Reviews" } },
+        { "type": "badge", "settings": { "icon": "💬", "label": "24/7 Support" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

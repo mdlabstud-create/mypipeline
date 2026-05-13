@@ -297,9 +297,11 @@ export function createApp(): Express {
           new BullMQAdapter(queues.tiktokScrapeQueue),
           new BullMQAdapter(queues.amazonScrapeQueue),
           new BullMQAdapter(queues.mergeProductsQueue),
+          new BullMQAdapter(queues.scoreViabilityQueue),
           new BullMQAdapter(queues.researchSuppliersQueue),
           new BullMQAdapter(queues.generateContentQueue),
           new BullMQAdapter(queues.publishProductQueue),
+          new BullMQAdapter(queues.adCreativeQueue),
           new BullMQAdapter(queues.forwardOrderQueue)
         ],
         serverAdapter

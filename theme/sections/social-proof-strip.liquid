@@ -1,0 +1,127 @@
+{% comment %}
+  Social Proof Strip — slim horizontal bar showing aggregate social signals.
+  Place near the top of the product page, just below the header or hero image.
+{% endcomment %}
+
+<div
+  class="social-proof-strip"
+  style="background-color: {{ section.settings.background_color }}; color: {{ section.settings.text_color }};"
+>
+  <ul
+    class="social-proof-strip__list social-proof-strip__list--{{ section.settings.animate | default: 'static' }}"
+    style="--sp-speed: {{ section.settings.animation_speed }}s;"
+    aria-label="Social proof"
+  >
+    {% for block in section.blocks %}
+      {% if block.settings.text != blank %}
+        <li class="social-proof-strip__item" {{ block.shopify_attributes }}>
+          {% if block.settings.emoji != blank %}
+            <span aria-hidden="true">{{ block.settings.emoji }}</span>
+          {% endif %}
+          {{ block.settings.text }}
+        </li>
+      {% endif %}
+    {% endfor %}
+    {% comment %} Duplicate items for seamless marquee loop {% endcomment %}
+    {% for block in section.blocks %}
+      {% if block.settings.text != blank %}
+        <li class="social-proof-strip__item" aria-hidden="true">
+          {% if block.settings.emoji != blank %}<span>{{ block.settings.emoji }}</span>{% endif %}
+          {{ block.settings.text }}
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</div>
+
+<style>
+  .social-proof-strip {
+    overflow: hidden;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .social-proof-strip__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    white-space: nowrap;
+  }
+  .social-proof-strip__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0 20px;
+    border-right: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+  .social-proof-strip__item:last-child { border-right: none; }
+
+  /* Marquee animation on mobile */
+  @keyframes sp-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @media (max-width: 768px) {
+    .social-proof-strip__list--scroll {
+      animation: sp-scroll var(--sp-speed, 18s) linear infinite;
+      width: max-content;
+    }
+    .social-proof-strip__list--scroll:hover { animation-play-state: paused; }
+  }
+  @media (min-width: 769px) {
+    .social-proof-strip__list {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    /* Hide the duplicate items on desktop */
+    .social-proof-strip__list > li[aria-hidden="true"] { display: none; }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Social Proof Strip",
+  "tag": "section",
+  "settings": [
+    { "type": "color",  "id": "background_color",  "label": "Background colour", "default": "#f0fdf4" },
+    { "type": "color",  "id": "text_color",         "label": "Text colour",       "default": "#166534" },
+    {
+      "type": "select",
+      "id": "animate",
+      "label": "Mobile animation",
+      "options": [
+        { "value": "scroll", "label": "Scrolling marquee" },
+        { "value": "static", "label": "Static" }
+      ],
+      "default": "scroll"
+    },
+    { "type": "range", "id": "animation_speed", "min": 8, "max": 40, "step": 2, "unit": "s", "label": "Scroll speed (seconds)", "default": 18 }
+  ],
+  "blocks": [
+    {
+      "type": "proof_item",
+      "name": "Proof item",
+      "settings": [
+        { "type": "text", "id": "emoji", "label": "Emoji",   "default": "⭐" },
+        { "type": "text", "id": "text",  "label": "Text",    "default": "4.8/5 average rating" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Social Proof Strip",
+      "blocks": [
+        { "type": "proof_item", "settings": { "emoji": "⭐", "text": "4.8/5 average rating" } },
+        { "type": "proof_item", "settings": { "emoji": "🥰", "text": "2,400+ happy customers" } },
+        { "type": "proof_item", "settings": { "emoji": "📦", "text": "Ships within 24 hours" } },
+        { "type": "proof_item", "settings": { "emoji": "✅", "text": "30-day money back guarantee" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

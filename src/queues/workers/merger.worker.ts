@@ -4,7 +4,7 @@ import { env } from '../../config/env';
 import { query } from '../../config/db';
 import logger, { logPipelineEvent } from '../../shared/logger';
 import { runMerger } from '../../modules/merger/merger.service';
-import { researchSuppliersQueue } from '../pipeline.queue';
+import { scoreViabilityQueue } from '../pipeline.queue';
 import type { MergeProductsJobData } from '../pipeline.queue';
 
 async function hasListingInFlight(productId: string): Promise<boolean> {
@@ -36,14 +36,14 @@ export function startMergerWorker(): Worker {
           skipped += 1;
           continue;
         }
-        await researchSuppliersQueue.add('research-suppliers', { productId });
+        await scoreViabilityQueue.add('score-viability', { productId });
         queued += 1;
       }
 
       await logPipelineEvent({
         stage: 'merger-worker',
         status: 'ok',
-        message: 'research jobs enqueued (deduped)',
+        message: 'viability scorer jobs enqueued (deduped)',
         payload: { offered: productIds.length, queued, skipped, target }
       });
     },

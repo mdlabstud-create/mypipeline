@@ -1,0 +1,169 @@
+{% comment %}
+  Sticky Add to Cart — appears fixed at bottom on mobile when user scrolls past main ATC button.
+  Requires the main ATC button to have id="MainProductForm" or data-main-atc attribute.
+  Place anywhere in product.json template — it hides itself on desktop.
+{% endcomment %}
+
+<div
+  id="sticky-atc-bar"
+  class="sticky-atc"
+  style="background-color: {{ section.settings.background_color }}; display: none;"
+  aria-hidden="true"
+>
+  <div class="sticky-atc__inner">
+    <div class="sticky-atc__info">
+      <span class="sticky-atc__title">{{ product.title | truncate: 40 }}</span>
+      <span class="sticky-atc__price">{{ product.selected_or_first_available_variant.price | money }}</span>
+    </div>
+    <div class="sticky-atc__controls">
+      <select class="sticky-atc__qty" aria-label="Quantity">
+        {% for i in (1..10) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+      </select>
+      <button
+        class="sticky-atc__btn"
+        style="background-color: {{ section.settings.button_color }};"
+        type="button"
+        aria-label="Add to cart"
+      >
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sticky-atc {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.12);
+    transform: translateY(100%);
+    transition: transform 0.28s ease;
+    will-change: transform;
+  }
+  .sticky-atc.is-visible { transform: translateY(0); }
+  .sticky-atc__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    max-width: 100%;
+  }
+  .sticky-atc__info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .sticky-atc__title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-foreground, #111);
+  }
+  .sticky-atc__price {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  .sticky-atc__controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .sticky-atc__qty {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    width: 56px;
+    background: #fff;
+  }
+  .sticky-atc__btn {
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sticky-atc__btn:active { opacity: 0.85; }
+
+  /* Desktop: hide entirely */
+  @media (min-width: 769px) { .sticky-atc { display: none !important; } }
+</style>
+
+<script>
+(function () {
+  {% unless section.settings.enabled %} return; {% endunless %}
+
+  var bar = document.getElementById('sticky-atc-bar');
+  if (!bar) return;
+
+  // Observe the main product form's ATC button leaving the viewport
+  var mainForm = document.getElementById('MainProductForm') || document.querySelector('[data-main-atc]');
+  if (!mainForm) return;
+
+  bar.style.display = '';
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        bar.classList.remove('is-visible');
+        bar.setAttribute('aria-hidden', 'true');
+      } else {
+        bar.classList.add('is-visible');
+        bar.removeAttribute('aria-hidden');
+      }
+    });
+  }, { threshold: 0.2 });
+
+  observer.observe(mainForm);
+
+  // Wire up sticky ATC button to Shopify cart
+  bar.querySelector('.sticky-atc__btn').addEventListener('click', function () {
+    var qty = parseInt(bar.querySelector('.sticky-atc__qty').value, 10) || 1;
+    var variantId = {{ product.selected_or_first_available_variant.id | json }};
+    fetch(window.Shopify.routes.root + 'cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: variantId, quantity: qty })
+    }).then(function () {
+      window.location.href = '/cart';
+    });
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Sticky Add to Cart",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable sticky bar",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Bar background colour",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button colour",
+      "default": "#111111"
+    }
+  ],
+  "presets": [{ "name": "Sticky Add to Cart" }]
+}
+{% endschema %}

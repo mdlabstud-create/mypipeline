@@ -1,0 +1,136 @@
+{% comment %}
+  Benefits Highlights — replaces generic bullet points with a visual icon+heading+text grid.
+  Place below the product description or above the trust badges bar.
+{% endcomment %}
+
+<div
+  class="benefits-highlights benefits-highlights--{{ section.settings.layout }}"
+  style="background-color: {{ section.settings.background_color }};"
+>
+  {% if section.settings.heading != blank %}
+    <h3 class="benefits-highlights__heading">{{ section.settings.heading }}</h3>
+  {% endif %}
+  <ul class="benefits-highlights__grid">
+    {% for block in section.blocks %}
+      {% if block.settings.benefit_heading != blank %}
+        <li class="benefits-highlights__item" {{ block.shopify_attributes }}>
+          {% if block.settings.icon != blank %}
+            <span class="benefits-highlights__icon" aria-hidden="true">{{ block.settings.icon }}</span>
+          {% endif %}
+          <div class="benefits-highlights__text">
+            <strong class="benefits-highlights__title">{{ block.settings.benefit_heading }}</strong>
+            {% if block.settings.description != blank %}
+              <span class="benefits-highlights__desc">{{ block.settings.description }}</span>
+            {% endif %}
+          </div>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</div>
+
+<style>
+  .benefits-highlights {
+    padding: 20px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+  .benefits-highlights__heading {
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 16px;
+    color: var(--color-foreground, #111);
+  }
+  .benefits-highlights__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* Grid layout */
+  .benefits-highlights--grid .benefits-highlights__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  /* Horizontal list layout */
+  .benefits-highlights--list .benefits-highlights__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .benefits-highlights__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .benefits-highlights__icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .benefits-highlights__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .benefits-highlights__title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-foreground, #111);
+  }
+  .benefits-highlights__desc {
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  @media (max-width: 480px) {
+    .benefits-highlights--grid .benefits-highlights__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Benefits Highlights",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Section heading", "default": "Why you'll love it" },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "grid", "label": "2-column grid" },
+        { "value": "list", "label": "Horizontal list" }
+      ],
+      "default": "grid"
+    },
+    { "type": "color", "id": "background_color", "label": "Background colour", "default": "#f9fafb" }
+  ],
+  "blocks": [
+    {
+      "type": "benefit",
+      "name": "Benefit",
+      "settings": [
+        { "type": "text", "id": "icon",            "label": "Icon (emoji)",   "default": "✅" },
+        { "type": "text", "id": "benefit_heading", "label": "Heading",        "default": "Premium Quality" },
+        { "type": "text", "id": "description",     "label": "Description",    "default": "Built to last with top-grade materials." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Benefits Highlights",
+      "blocks": [
+        { "type": "benefit", "settings": { "icon": "✅", "benefit_heading": "Premium Quality",     "description": "Built to last with top-grade materials." } },
+        { "type": "benefit", "settings": { "icon": "⚡", "benefit_heading": "Fast Results",        "description": "See the difference from day one." } },
+        { "type": "benefit", "settings": { "icon": "🎁", "benefit_heading": "Ready to Gift",       "description": "Arrives in elegant packaging." } },
+        { "type": "benefit", "settings": { "icon": "🔒", "benefit_heading": "Secure Purchase",     "description": "100% safe checkout guaranteed." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

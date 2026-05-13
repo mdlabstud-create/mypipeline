@@ -4,6 +4,8 @@ import logger from '../../shared/logger';
 import { publishToShopify } from '../../modules/publisher/shopify.service';
 import { getListingById } from '../../modules/publisher/publisher.types';
 import { PublisherError } from '../../shared/errors';
+import { adCreativeQueue } from '../pipeline.queue';
+import { query } from '../../config/db';
 import type { PublishProductJobData } from '../pipeline.queue';
 
 /**
@@ -22,6 +24,19 @@ export async function publisherProcessor(data: PublishProductJobData): Promise<v
     data.listingId,
     data.shopifyStatus !== undefined ? { shopifyStatus: data.shopifyStatus } : undefined
   );
+
+  // After successful publish, enqueue ad creative generation
+  const rows = await query<{ product_id: string; status: string }>(
+    'SELECT product_id, status FROM product_listings WHERE id = $1 LIMIT 1',
+    [data.listingId]
+  );
+  const listing = rows[0];
+  if (listing?.status === 'published') {
+    await adCreativeQueue.add('generate-ad-creative', {
+      listingId: data.listingId,
+      productId: listing.product_id
+    });
+  }
 }
 
 /**

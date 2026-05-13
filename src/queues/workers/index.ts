@@ -6,6 +6,8 @@ import { startMergerWorker } from './merger.worker';
 import { startPublisherWorker } from './publisher.worker';
 import { startResearcherWorker } from './researcher.worker';
 import { startTikTokWorker } from './tiktok.worker';
+import { startViabilityScorerWorker } from './viabilityScorer.worker';
+import { startAdCreativeGeneratorWorker } from './adCreativeGenerator.worker';
 
 /**
  * Starts all BullMQ workers for the pipeline.
@@ -15,10 +17,11 @@ export function startAllWorkers(): Worker[] {
     startTikTokWorker(),
     startAmazonWorker(),
     startMergerWorker(),
+    startViabilityScorerWorker(),
     startResearcherWorker(),
     startContentWorker(),
     startPublisherWorker(),
+    startAdCreativeGeneratorWorker(),
     startForwarderWorker()
   ];
 }
-

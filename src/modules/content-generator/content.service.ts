@@ -167,12 +167,26 @@ export async function generateContent(productId: string): Promise<string | null>
     product_title: string | null;
     price_usd: number;
     shipping_days: number | null;
+    sla_status: string | null;
     rating: number | null;
     review_count: number | null;
     images: unknown;
   }>('SELECT * FROM suppliers WHERE product_id = $1 AND rank = 1 LIMIT 1', [productId]);
   const supplier = supplierRows[0];
   if (!supplier) return null;
+
+  // SLA guard: top-ranked supplier must not be disqualified
+  if (supplier.sla_status === 'disqualified') {
+    await query(`UPDATE trending_products SET status = 'error' WHERE id = $1`, [productId]);
+    await logPipelineEvent({
+      stage: 'content-generator',
+      status: 'error',
+      message: 'skipped: top supplier sla_status is disqualified',
+      productId,
+      payload: { supplierId: supplier.id, slaStatus: supplier.sla_status }
+    });
+    return null;
+  }
 
   const blocked = await query<{ n: string }>(
     `SELECT COUNT(*)::text AS n FROM product_listings

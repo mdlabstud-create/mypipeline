@@ -1,0 +1,199 @@
+{% comment %}
+  Countdown Timer — place above or below product description for urgency.
+  Modes: daily_reset (resets at midnight UTC each day) or fixed_date.
+{% endcomment %}
+
+{% assign show_section = true %}
+{% if section.settings.show_section == false %}{% assign show_section = false %}{% endif %}
+
+{% if show_section %}
+<div class="countdown-timer" style="background-color: {{ section.settings.bg_color }};">
+  {% if section.settings.offer_badge != blank %}
+    <div class="countdown-timer__badge">{{ section.settings.offer_badge }}</div>
+  {% endif %}
+  <p class="countdown-timer__headline" style="color: {{ section.settings.text_color }};">
+    {{ section.settings.headline }}
+  </p>
+  {% if section.settings.subtext != blank %}
+    <p class="countdown-timer__subtext" style="color: {{ section.settings.text_color }};">
+      {{ section.settings.subtext }}
+    </p>
+  {% endif %}
+  <div class="countdown-timer__digits" id="countdown-digits-{{ section.id }}">
+    <div class="countdown-timer__unit">
+      <span class="countdown-timer__num" id="ctd-days-{{ section.id }}" style="color: {{ section.settings.digit_color }}; background: {{ section.settings.digit_bg }};">00</span>
+      <span class="countdown-timer__label" style="color: {{ section.settings.text_color }};">Days</span>
+    </div>
+    <span class="countdown-timer__sep" style="color: {{ section.settings.digit_color }};">:</span>
+    <div class="countdown-timer__unit">
+      <span class="countdown-timer__num" id="ctd-hours-{{ section.id }}" style="color: {{ section.settings.digit_color }}; background: {{ section.settings.digit_bg }};">00</span>
+      <span class="countdown-timer__label" style="color: {{ section.settings.text_color }};">Hours</span>
+    </div>
+    <span class="countdown-timer__sep" style="color: {{ section.settings.digit_color }};">:</span>
+    <div class="countdown-timer__unit">
+      <span class="countdown-timer__num" id="ctd-mins-{{ section.id }}" style="color: {{ section.settings.digit_color }}; background: {{ section.settings.digit_bg }};">00</span>
+      <span class="countdown-timer__label" style="color: {{ section.settings.text_color }};">Minutes</span>
+    </div>
+    <span class="countdown-timer__sep" style="color: {{ section.settings.digit_color }};">:</span>
+    <div class="countdown-timer__unit">
+      <span class="countdown-timer__num" id="ctd-secs-{{ section.id }}" style="color: {{ section.settings.digit_color }}; background: {{ section.settings.digit_bg }};">00</span>
+      <span class="countdown-timer__label" style="color: {{ section.settings.text_color }};">Seconds</span>
+    </div>
+  </div>
+  <p class="countdown-timer__ended" id="ctd-ended-{{ section.id }}" style="display:none; color: {{ section.settings.text_color }};">
+    {{ section.settings.ended_message }}
+  </p>
+</div>
+{% endif %}
+
+<style>
+  .countdown-timer {
+    text-align: center;
+    padding: 20px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+  .countdown-timer__badge {
+    display: inline-block;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+  }
+  .countdown-timer__headline {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+  .countdown-timer__subtext {
+    font-size: 0.85rem;
+    margin: 0 0 14px;
+    opacity: 0.8;
+  }
+  .countdown-timer__digits {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .countdown-timer__unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .countdown-timer__num {
+    display: inline-block;
+    min-width: 52px;
+    padding: 10px 6px;
+    border-radius: 8px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .countdown-timer__label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    opacity: 0.7;
+  }
+  .countdown-timer__sep {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1;
+    padding-top: 10px;
+  }
+  @media (max-width: 360px) {
+    .countdown-timer__num { min-width: 42px; font-size: 1.3rem; }
+  }
+</style>
+
+<script>
+(function () {
+  var sectionId = {{ section.id | json }};
+  var mode = {{ section.settings.mode | json }};
+  var resetHours = parseInt({{ section.settings.reset_hours | json }}, 10) || 24;
+  var fixedEnd = {{ section.settings.fixed_end_date | json }};
+
+  var elDays  = document.getElementById('ctd-days-'  + sectionId);
+  var elHours = document.getElementById('ctd-hours-' + sectionId);
+  var elMins  = document.getElementById('ctd-mins-'  + sectionId);
+  var elSecs  = document.getElementById('ctd-secs-'  + sectionId);
+  var elEnded = document.getElementById('ctd-ended-' + sectionId);
+  var elDigits = document.getElementById('countdown-digits-' + sectionId);
+
+  if (!elDays) return;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function getTarget() {
+    if (mode === 'fixed_date' && fixedEnd) {
+      return new Date(fixedEnd).getTime();
+    }
+    // Daily reset: use localStorage to persist reference so refresh doesn't reset
+    var key = 'ctd_target_' + sectionId;
+    var stored = localStorage.getItem(key);
+    var now = Date.now();
+    if (stored && parseInt(stored, 10) > now) return parseInt(stored, 10);
+    var target = now + resetHours * 3600 * 1000;
+    localStorage.setItem(key, String(target));
+    return target;
+  }
+
+  var target = getTarget();
+
+  var interval = setInterval(function () {
+    var diff = target - Date.now();
+    if (diff <= 0) {
+      clearInterval(interval);
+      if (elDigits) elDigits.style.display = 'none';
+      if (elEnded) elEnded.style.display = '';
+      return;
+    }
+    var d = Math.floor(diff / 86400000);
+    var h = Math.floor((diff % 86400000) / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    elDays.textContent  = pad(d);
+    elHours.textContent = pad(h);
+    elMins.textContent  = pad(m);
+    elSecs.textContent  = pad(s);
+  }, 1000);
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Countdown Timer",
+  "tag": "section",
+  "settings": [
+    { "type": "checkbox", "id": "show_section", "label": "Show section", "default": true },
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "Timer mode",
+      "options": [
+        { "value": "daily_reset", "label": "Daily reset" },
+        { "value": "fixed_date",  "label": "Fixed end date" }
+      ],
+      "default": "daily_reset"
+    },
+    { "type": "number", "id": "reset_hours", "label": "Reset duration (hours, daily mode)", "default": 24 },
+    { "type": "text",   "id": "fixed_end_date", "label": "Fixed end date (ISO 8601, fixed mode)", "info": "e.g. 2026-12-31T23:59:00Z" },
+    { "type": "text",   "id": "headline",  "label": "Headline",    "default": "⏰ Offer ends soon!" },
+    { "type": "text",   "id": "subtext",   "label": "Subtext",     "default": "Order now before stock runs out" },
+    { "type": "text",   "id": "offer_badge", "label": "Offer badge text", "default": "🔥 Limited Time — 40% OFF" },
+    { "type": "text",   "id": "ended_message", "label": "Ended message", "default": "This offer has ended." },
+    { "type": "color",  "id": "bg_color",    "label": "Background colour",   "default": "#1e293b" },
+    { "type": "color",  "id": "text_color",  "label": "Text colour",         "default": "#f1f5f9" },
+    { "type": "color",  "id": "digit_color", "label": "Digit colour",        "default": "#ffffff" },
+    { "type": "color",  "id": "digit_bg",    "label": "Digit card background","default": "#334155" }
+  ],
+  "presets": [{ "name": "Countdown Timer" }]
+}
+{% endschema %}

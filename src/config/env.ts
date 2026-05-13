@@ -155,6 +155,22 @@ const EnvSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   LOQATE_API_KEY: z.string().optional(),
 
+  // Viability Scorer (Task 1)
+  /** Minimum composite score to mark a product viable (default: 7.0). */
+  VIABILITY_MIN_SCORE: z.coerce.number().min(0).max(10).optional(),
+  /** Score floor for marginal (held for review, default: 5.0). */
+  VIABILITY_MARGINAL_SCORE: z.coerce.number().min(0).max(10).optional(),
+  /** Hard-reject ceiling: competing Shopify stores (default: 50). */
+  VIABILITY_COMPETITION_MAX: z.coerce.number().int().min(1).optional(),
+  /** Hard-reject floor: estimated margin % (default: 20). */
+  VIABILITY_MIN_MARGIN_PCT: z.coerce.number().min(0).max(100).optional(),
+
+  // Ad Creative Generator (Task 3)
+  /** OpenAI model for ad creative generation (default: gpt-4o). */
+  AD_CREATIVE_MODEL: z.string().optional(),
+  /** Max retry attempts for ad creative OpenAI call (default: 3). */
+  AD_CREATIVE_MAX_RETRIES: z.coerce.number().int().min(1).max(10).optional(),
+
   // App
   PORT: z.coerce.number().int().positive().optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
@@ -220,6 +236,12 @@ export const env = (() => {
     DISABLE_RESEARCHER_KILL_SWITCH: parsed.data.DISABLE_RESEARCHER_KILL_SWITCH ?? false,
     DROPSHIP_AUTO_FORWARD: parsed.data.DROPSHIP_AUTO_FORWARD ?? false,
     DROPSHIP_FORWARD_DRY_RUN: parsed.data.DROPSHIP_FORWARD_DRY_RUN ?? true,
+    VIABILITY_MIN_SCORE: parsed.data.VIABILITY_MIN_SCORE ?? 7.0,
+    VIABILITY_MARGINAL_SCORE: parsed.data.VIABILITY_MARGINAL_SCORE ?? 5.0,
+    VIABILITY_COMPETITION_MAX: parsed.data.VIABILITY_COMPETITION_MAX ?? 50,
+    VIABILITY_MIN_MARGIN_PCT: parsed.data.VIABILITY_MIN_MARGIN_PCT ?? 20,
+    AD_CREATIVE_MODEL: parsed.data.AD_CREATIVE_MODEL ?? 'gpt-4o',
+    AD_CREATIVE_MAX_RETRIES: parsed.data.AD_CREATIVE_MAX_RETRIES ?? 3,
     PORT: parsed.data.PORT ?? 3000,
     NODE_ENV: parsed.data.NODE_ENV ?? 'development',
     API_BEARER_TOKEN: parsed.data.API_BEARER_TOKEN ?? undefined

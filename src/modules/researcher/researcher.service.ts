@@ -2,7 +2,7 @@ import { query } from '../../config/db';
 import redisClient from '../../config/redis';
 import { logPipelineEvent } from '../../shared/logger';
 import type { SupplierCandidate } from '../../shared/types';
-import { rankSuppliers } from './ranker';
+import { rankSuppliers, classifySla } from './ranker';
 import { searchAliExpress } from './aliexpress';
 import { enrichTrendingWithAmazonKeywordSearch } from './amazon.keyword.enrich';
 import { shouldTripResearcherKillSwitch } from './researcher.killSwitch';
@@ -129,12 +129,30 @@ export async function researchProduct(productId: string): Promise<void> {
   }
 
   const ranked = rankSuppliers(results);
+
+  // Guard: if ALL ranked suppliers are disqualified, abort content generation
+  const allDisqualified = ranked.every((s) => s.slaStatus === 'disqualified');
+  if (allDisqualified) {
+    await query(`UPDATE trending_products SET status = 'error' WHERE id = $1`, [productId]);
+    await logPipelineEvent({
+      stage: 'researcher',
+      status: 'warn',
+      message: 'supplier_sla_failed: all suppliers disqualified by shipping SLA',
+      productId,
+      payload: { supplierCount: ranked.length }
+    });
+    return;
+  }
+
   for (const s of ranked) {
+    const slaStatus = s.slaStatus;
+    const now = new Date().toISOString();
     await query(
       `INSERT INTO suppliers
         (product_id, platform, supplier_url, product_title, price_usd, price_cny, moq, rating, review_count,
-         shipping_days, fast_ship, supplier_score, images, vetted, rank)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+         shipping_days, shipping_days_min, shipping_days_max, sla_status, sla_checked_at,
+         fast_ship, supplier_score, images, vetted, rank)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
       [
         productId,
         s.platform,
@@ -146,6 +164,10 @@ export async function researchProduct(productId: string): Promise<void> {
         s.rating ?? null,
         s.reviewCount ?? 0,
         s.shippingDays ?? null,
+        s.shippingDays ?? null,       // shipping_days_min (use same until we have finer data)
+        s.shippingDays ?? null,       // shipping_days_max
+        slaStatus,
+        now,
         s.fastShip ?? false,
         s.supplierScore ?? null,
         JSON.stringify(s.images ?? []),

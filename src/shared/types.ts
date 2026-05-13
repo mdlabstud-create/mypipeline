@@ -1,4 +1,7 @@
 export type TrendingProductSource = 'tiktok' | 'amazon' | 'both';
+export type ViabilityStatus = 'unchecked' | 'viable' | 'marginal' | 'rejected';
+export type SlaStatus = 'unknown' | 'fast' | 'acceptable' | 'slow' | 'disqualified';
+export type AdCreativeStatus = 'draft' | 'approved' | 'used';
 export type TrendingProductStatus =
   | 'pending_research'
   | 'researching'
@@ -229,3 +232,28 @@ export type ForwardedOrderStatus =
   | 'dry_run'
   | 'manual_review'
   | 'error';
+
+export interface ViabilityBreakdown {
+  marginScore: number;
+  competitionScore: number;
+  demandScore: number;
+  wowScore: number;
+  estimatedMarginPct: number;
+  competingStores: number | null;
+  demandAverage: number | null;
+  hardReject: string | null;
+}
+
+export interface AdCreative {
+  id: string;
+  listingId: string;
+  productId: string;
+  angles: unknown[];
+  hooks: unknown[];
+  imageAdPrompts: unknown[];
+  videoScripts: unknown[];
+  hashtags: Record<string, string[]>;
+  platformCopies: Record<string, unknown>;
+  generatedAt: string;
+  status: AdCreativeStatus;
+}

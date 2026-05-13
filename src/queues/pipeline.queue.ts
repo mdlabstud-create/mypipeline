@@ -104,6 +104,29 @@ export const publishProductQueue = new Queue<PublishProductJobData>('publish-pro
   defaultJobOptions
 });
 
+export interface ScoreViabilityJobData {
+  productId: string;
+}
+
+export interface GenerateAdCreativeJobData {
+  listingId: string;
+  productId: string;
+}
+
+export const scoreViabilityQueue = new Queue<ScoreViabilityJobData>('score-viability', {
+  connection,
+  defaultJobOptions
+});
+
+export const adCreativeQueue = new Queue<GenerateAdCreativeJobData>('generate-ad-creative', {
+  connection,
+  defaultJobOptions: {
+    ...defaultJobOptions,
+    attempts: 3,
+    backoff: { type: 'exponential' as const, delay: 10_000 }
+  }
+});
+
 export const forwardOrderQueue = new Queue<ForwardOrderJobData>('forward-order', {
   connection,
   defaultJobOptions: {

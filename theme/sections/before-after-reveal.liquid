@@ -1,0 +1,160 @@
+{% comment %}
+  Before/After Reveal — interactive slider comparing two images.
+  Place on product pages to show transformation or problem/solution.
+  Pure vanilla JS, no external dependencies.
+{% endcomment %}
+
+{% if section.settings.before_image != blank and section.settings.after_image != blank %}
+<div class="bfaf-section">
+  {% if section.settings.heading != blank %}
+    <h3 class="bfaf-section__heading">{{ section.settings.heading }}</h3>
+  {% endif %}
+  {% if section.settings.subtext != blank %}
+    <p class="bfaf-section__subtext">{{ section.settings.subtext }}</p>
+  {% endif %}
+
+  <div class="bfaf-wrapper" id="bfaf-{{ section.id }}">
+    <div class="bfaf-before">
+      {{ section.settings.before_image | image_url: width: 800 | image_tag: loading: 'lazy', alt: section.settings.before_label }}
+      <span class="bfaf-label bfaf-label--before">{{ section.settings.before_label }}</span>
+    </div>
+    <div class="bfaf-after" id="bfaf-after-{{ section.id }}">
+      {{ section.settings.after_image | image_url: width: 800 | image_tag: loading: 'lazy', alt: section.settings.after_label }}
+      <span class="bfaf-label bfaf-label--after">{{ section.settings.after_label }}</span>
+    </div>
+    <div class="bfaf-divider" id="bfaf-divider-{{ section.id }}">
+      <div class="bfaf-handle">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M7 4l-4 6 4 6M13 4l4 6-4 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <input
+      type="range"
+      class="bfaf-range"
+      id="bfaf-range-{{ section.id }}"
+      min="0" max="100" value="50"
+      aria-label="Before/after slider"
+    >
+  </div>
+</div>
+{% endif %}
+
+<style>
+  .bfaf-section { padding: 20px 16px; text-align: center; }
+  .bfaf-section__heading { font-size: 1.1rem; font-weight: 700; margin: 0 0 6px; }
+  .bfaf-section__subtext { font-size: 0.85rem; color: #6b7280; margin: 0 0 16px; }
+
+  .bfaf-wrapper {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 10px;
+    user-select: none;
+    touch-action: none;
+  }
+  .bfaf-before,
+  .bfaf-after {
+    position: relative;
+    width: 100%;
+  }
+  .bfaf-before img,
+  .bfaf-after img {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+  }
+  .bfaf-after {
+    position: absolute;
+    top: 0; left: 0;
+    width: 50%;
+    overflow: hidden;
+  }
+  .bfaf-after img { min-width: 600px; max-width: unset; }
+
+  .bfaf-label {
+    position: absolute;
+    bottom: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .bfaf-label--before { right: 8px; }
+  .bfaf-label--after  { left: 8px; }
+
+  .bfaf-divider {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 3px;
+    background: #fff;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .bfaf-handle {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 38px; height: 38px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    color: #374151;
+  }
+  .bfaf-range {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: ew-resize;
+    z-index: 3;
+    margin: 0;
+  }
+</style>
+
+<script>
+(function () {
+  var id = {{ section.id | json }};
+  var wrapper  = document.getElementById('bfaf-' + id);
+  var afterEl  = document.getElementById('bfaf-after-' + id);
+  var divider  = document.getElementById('bfaf-divider-' + id);
+  var range    = document.getElementById('bfaf-range-' + id);
+  if (!wrapper || !afterEl || !range) return;
+
+  function update(pct) {
+    afterEl.style.width = pct + '%';
+    divider.style.left  = pct + '%';
+  }
+
+  range.addEventListener('input', function () { update(this.value); });
+  update(50);
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Before / After Reveal",
+  "tag": "section",
+  "settings": [
+    { "type": "text",  "id": "heading",      "label": "Heading",      "default": "See the difference" },
+    { "type": "text",  "id": "subtext",      "label": "Subtext",      "default": "Drag the slider to compare" },
+    { "type": "image_picker", "id": "before_image", "label": "Before image" },
+    { "type": "image_picker", "id": "after_image",  "label": "After image" },
+    { "type": "text",  "id": "before_label", "label": "Before label", "default": "Before" },
+    { "type": "text",  "id": "after_label",  "label": "After label",  "default": "After" }
+  ],
+  "presets": [{ "name": "Before / After Reveal" }]
+}
+{% endschema %}
