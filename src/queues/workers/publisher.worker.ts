@@ -30,11 +30,11 @@ export async function publisherProcessor(data: PublishProductJobData): Promise<v
     'SELECT product_id, status FROM product_listings WHERE id = $1 LIMIT 1',
     [data.listingId]
   );
-  const listing = rows[0];
-  if (listing?.status === 'published') {
+  const publishedRow = rows[0];
+  if (publishedRow?.status === 'published') {
     await adCreativeQueue.add('generate-ad-creative', {
       listingId: data.listingId,
-      productId: listing.product_id
+      productId: publishedRow.product_id
     });
   }
 }
